@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 危険メモ：誰でも読める（共有が目的）。書けるのはログイン済みの利用者だけ。削除はできない。
+    match /artifacts/{appId}/public/data/danger_spots/{docId} {
+      allow read: if true;
+      allow create, update: if request.auth != null;
+      allow delete: if false;
+    }
+    // ポイントランキング：誰でも読める。書けるのは本人の文書だけ（自分の端末分）。
+    match /artifacts/{appId}/public/data/leaderboard/{userId} {
+      allow read: if true;
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if false;
+    }
+    // 自分のセッション文書：本人のみ読み書きできる。
+    match /artifacts/{appId}/users/{userId}/session/active {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    // それ以外（アカウント台帳など）はすべて拒否。パスワードのハッシュを公開しないため。
+  }
+}
