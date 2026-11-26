@@ -26,6 +26,9 @@
     <!-- Leaflet 地図ライブラリ -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -133,7 +136,7 @@
         }
     </style>
 </head>
-<body class="text-size-normal flex flex-col h-screen overflow-hidden select-none sm:select-auto">
+<body class="text-size-large flex flex-col h-screen overflow-hidden select-none sm:select-auto">
 
     <!-- ========================================================= -->
     <!-- 1. トップネイビーヘッダー                                  -->
@@ -237,8 +240,8 @@
             <div class="space-y-1">
                 <div class="font-bold text-slate-600 text-[11px]">🔤 文字の大きさ</div>
                 <div class="grid grid-cols-3 gap-1.5">
-                    <button type="button" onclick="setTextSize('normal')" id="size-btn-normal" class="py-1.5 rounded-xl bg-blue-700 text-white font-extrabold cursor-pointer whitespace-nowrap">標準</button>
-                    <button type="button" onclick="setTextSize('large')" id="size-btn-large" class="py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold cursor-pointer whitespace-nowrap">大</button>
+                    <button type="button" onclick="setTextSize('normal')" id="size-btn-normal" class="py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold cursor-pointer whitespace-nowrap">標準</button>
+                    <button type="button" onclick="setTextSize('large')" id="size-btn-large" class="py-1.5 rounded-xl bg-blue-700 text-white font-extrabold cursor-pointer whitespace-nowrap">大</button>
                     <button type="button" onclick="setTextSize('xlarge')" id="size-btn-xlarge" class="py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold cursor-pointer whitespace-nowrap">特大</button>
                 </div>
             </div>
@@ -250,6 +253,7 @@
                 <span class="font-bold text-slate-700">🌊 洪水ハザードマップ</span>
                 <button type="button" onclick="toggleHazardMap()" id="btn-hazard-map" class="px-3 py-1 rounded-xl bg-slate-200 text-slate-700 font-extrabold cursor-pointer whitespace-nowrap">OFF</button>
             </div>
+            <button type="button" onclick="toggleDisplaySettingsPopover(); openWorryPicker();" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl cursor-pointer whitespace-nowrap">⚠️ 気になる危険を選び直す（3つまで）</button>
             <button type="button" onclick="toggleDisplaySettingsPopover(); openLanguageGate();" class="w-full py-2 bg-blue-700 hover:bg-blue-800 text-white font-extrabold rounded-xl cursor-pointer whitespace-nowrap">🌐 起動時の言語選択画面を開く</button>
         </div>
     </header>
@@ -327,7 +331,7 @@
                         <div class="flex items-center gap-2 pt-1">
                             <button type="button" onclick="searchAndCompareRoutes()" class="flex-1 py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-xs shadow flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap">
                                 <i class="fa-solid fa-magnifying-glass"></i>
-                                <span>2ルート比較診断</span>
+                                <span>安全な道と危ない道を比べる</span>
                             </button>
                             <button type="button" onclick="runDemoTwoRoutes()" class="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 font-extrabold rounded-xl text-xs cursor-pointer whitespace-nowrap">
                                 デモ比較
@@ -352,8 +356,10 @@
                         </div>
 
                         <!-- 時間差・安全メリットの後押しメッセージ -->
-                        <div id="route-recommendation-callout" class="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 font-extrabold text-xs leading-relaxed">
-                            💡 おすすめ：プラス約2分（126m）で、危険スポット1件（見通し注意）を回避できます！
+                        <div id="route-recommendation-callout" class="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 font-extrabold text-xs leading-relaxed space-y-0.5">
+                                                        <div>おすすめ：緑の安全ルート</div>
+                            <div>理由：ルートを検索すると、ここに理由が出ます</div>
+                            <div>緑と赤の時間・距離と危険の種類も、検索後にここに表示されます</div>
                         </div>
 
                         <div class="space-y-2">
@@ -499,7 +505,7 @@
 
                         <button type="button" onclick="submitDangerSpot()" class="w-full py-3 bg-blue-700 hover:bg-blue-800 text-white font-extrabold rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap">
                             <i class="fa-solid fa-paper-plane"></i>
-                            <span id="post-form-title">危険を投稿する</span><span>（+5pt）</span>
+                            <span id="post-form-title">危険を見つけたら、みんなに教える</span><span class="text-[10px] font-bold text-slate-500">（+5pt）</span>
                         </button>
                     </div>
                 </div>
@@ -530,7 +536,7 @@
                     </div>
 
  <button type="button" onclick="openUsageReportModal()" class="w-full text-left bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-2xl p-3 shadow-sm cursor-pointer">
-<span class="font-extrabold text-sm text-emerald-950">📊 利用状況・感想レポート</span>
+<span class="font-extrabold text-sm text-emerald-950">📊 みんなの声と安全の記録を見る</span>
 <span class="block text-[11px] text-slate-600 mt-1 leading-relaxed">都道府県・地域・国ごとの利用数値の推移と比較、県内のメモが多い場所、みんなの感想をまとめたページです。自治体・県庁への提出資料として使えます。</span>
 <span class="block text-[11px] font-extrabold text-emerald-800 mt-1">タップして集計ページを開く →</span>
 </button>
@@ -685,11 +691,15 @@
                     <div class="border-t border-slate-100 pt-1.5 space-y-1 text-[10px]">
                         <label class="flex items-center justify-between cursor-pointer">
                             <span class="font-bold text-blue-900">📌 警察・消防公式メモ</span>
-                            <input type="checkbox" id="toggle-official-pins" checked onchange="toggleOfficialPinsLayer(this.checked)" class="accent-blue-700">
+                            <input type="checkbox" id="toggle-official-pins" onchange="toggleOfficialPinsLayer(this.checked)" class="accent-blue-700">
                         </label>
                         <label class="flex items-center justify-between cursor-pointer">
                             <span class="font-bold text-slate-700">🏢 周辺の警察署・消防署</span>
-                            <input type="checkbox" id="toggle-stations-layer" checked onchange="toggleEmergencyStationsLayer(this.checked)" class="accent-blue-700">
+                            <input type="checkbox" id="toggle-stations-layer" onchange="toggleEmergencyStationsLayer(this.checked)" class="accent-blue-700">
+                        </label>
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <span class="font-bold text-violet-900">🏬 施設・お店</span>
+                            <input type="checkbox" id="toggle-facilities-layer" onchange="toggleFacilitiesLayer(this.checked)" class="accent-violet-700">
                         </label>
                     </div>
                 </div>
@@ -712,6 +722,12 @@
             </div>
 
             <!-- 【優先度2＆6改善】危険エリア接近警告バナー（行動強調＋閉じるボタン1行固定） -->
+            <!-- 【Ver.8.10】地図の下：見守りモード開始ボタン（ようこそ画面から移動） -->
+            <div class="absolute bottom-5 left-1/2 -translate-x-1/2 z-20">
+                <button type="button" onclick="togglePocketWatchMode()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-full text-xs font-extrabold flex items-center gap-1.5 shadow-xl border-2 border-white cursor-pointer whitespace-nowrap">
+                    🎧 見守りモードを開始（画面を見ずに歩く）
+                </button>
+            </div>
             <div id="proximity-alert-banner" class="hidden absolute bottom-20 left-3 right-3 sm:right-auto sm:max-w-lg z-30 bg-red-600 text-white p-3.5 rounded-2xl shadow-2xl border-2 border-yellow-300">
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-start gap-2.5 min-w-0">
@@ -798,23 +814,80 @@
 
             <div class="space-y-2 pt-1">
                 <button type="button" onclick="closeWelcomeModal()" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl text-sm shadow-lg cursor-pointer whitespace-nowrap">
-                    地図をはじめる
+                    地図で近くの危険をチェックする
                 </button>
-
-                <!-- 優先度3：最初の10秒で体験させるワンステップ導線 -->
-                <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-2.5 text-center space-y-1.5">
-                    <div class="text-[11px] font-extrabold text-emerald-950">
-                        💡 まずは「見守りモードを開始（画面を見ずに歩く）」で歩いてみよう！
-                    </div>
-                    <button type="button" onclick="startPocketWatchFromWelcome()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs shadow-sm cursor-pointer whitespace-nowrap">
-                        🎧 見守りモードを開始（画面を見ずに歩く）
-                    </button>
-                </div>
 
                 <button type="button" onclick="openAuthFromWelcome()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs cursor-pointer whitespace-nowrap">
                     🔐 パトロール隊員ログイン / 新規登録
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- Ver.8.10 はじめての危険フィルター（気になる危険を3つまで） -->
+    <!-- ========================================================= -->
+    <div id="worry-picker-modal" class="hidden fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border-t-8 border-amber-500 space-y-4 text-xs">
+            <h3 class="text-base font-black text-slate-900">⚠️ 気になる危険を教えてください</h3>
+            <p class="text-slate-600 leading-relaxed">はじめて使う人へのご案内です。気になる危険を3つまで選ぶと、その種類だけ地図に表示します。あとから表示設定で選び直せます。</p>
+            <div class="space-y-2">
+                <label class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5 cursor-pointer">
+                    <input type="checkbox" id="worry-opt-見通しが悪い交差点" onchange="onWorryOptionChange(this)" class="w-4 h-4 accent-amber-600">
+                    <span class="text-base">👀</span>
+                    <span class="font-bold text-slate-800">見通しが心配</span>
+                    <span class="text-[11px] text-slate-500">見通しが悪い交差点</span>
+                </label>
+                <label class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5 cursor-pointer">
+                    <input type="checkbox" id="worry-opt-車のスピードが速い道" onchange="onWorryOptionChange(this)" class="w-4 h-4 accent-amber-600">
+                    <span class="text-base">🚗</span>
+                    <span class="font-bold text-slate-800">車が心配</span>
+                    <span class="text-[11px] text-slate-500">車のスピードが速い道</span>
+                </label>
+                <label class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5 cursor-pointer">
+                    <input type="checkbox" id="worry-opt-街灯が少なく暗い夜道" onchange="onWorryOptionChange(this)" class="w-4 h-4 accent-amber-600">
+                    <span class="text-base">🌙</span>
+                    <span class="font-bold text-slate-800">夜道が心配</span>
+                    <span class="text-[11px] text-slate-500">街灯が少なく暗い夜道</span>
+                </label>
+                <label class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5 cursor-pointer">
+                    <input type="checkbox" id="worry-opt-道路の段差・陥没・工事" onchange="onWorryOptionChange(this)" class="w-4 h-4 accent-amber-600">
+                    <span class="text-base">🚧</span>
+                    <span class="font-bold text-slate-800">段差が心配</span>
+                    <span class="text-[11px] text-slate-500">道路の段差・陥没・工事</span>
+                </label>
+                <label class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5 cursor-pointer">
+                    <input type="checkbox" id="worry-opt-大雨時の冠水・浸水エリア" onchange="onWorryOptionChange(this)" class="w-4 h-4 accent-amber-600">
+                    <span class="text-base">🌊</span>
+                    <span class="font-bold text-slate-800">水が心配</span>
+                    <span class="text-[11px] text-slate-500">大雨時の冠水・浸水エリア</span>
+                </label>
+                <label class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5 cursor-pointer">
+                    <input type="checkbox" id="worry-opt-不審者・防犯上の注意" onchange="onWorryOptionChange(this)" class="w-4 h-4 accent-amber-600">
+                    <span class="text-base">⚠️</span>
+                    <span class="font-bold text-slate-800">防犯が心配</span>
+                    <span class="text-[11px] text-slate-500">不審者・防犯上の注意</span>
+                </label>
+            </div>
+            <p id="worry-picker-hint" class="text-[11px] font-bold text-slate-500">選ばなければ、すべての危険を表示します。</p>
+            <div class="space-y-2">
+                <button type="button" onclick="applyWorryPicker()" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-2xl text-sm shadow cursor-pointer whitespace-nowrap">選んだ危険だけ表示する</button>
+                <button type="button" onclick="skipWorryPicker()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl cursor-pointer whitespace-nowrap">選ばずに全部表示する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- Ver.8.10 重なったピンの一覧（クラスタをタップしたとき）   -->
+    <!-- ========================================================= -->
+    <div id="cluster-spots-modal" class="hidden fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border-t-8 border-amber-500 space-y-3 text-xs max-h-[85vh] overflow-y-auto">
+            <div class="flex items-center justify-between gap-2">
+                <h3 id="cluster-spots-title" class="text-base font-black text-slate-900">📍 この場所の危険メモ</h3>
+                <button type="button" onclick="closeClusterSpotsModal()" class="text-slate-400 hover:text-slate-700 text-2xl font-bold cursor-pointer whitespace-nowrap">×</button>
+            </div>
+            <p class="text-slate-600 leading-relaxed">タップすると、その場所を地図で表示します。</p>
+            <div id="cluster-spots-list" class="space-y-2"></div>
         </div>
     </div>
 
@@ -839,7 +912,7 @@
             </p>
             <div class="grid grid-cols-1 gap-3 pt-2">
                 <button type="button" onclick="simulateProximityDemo()" class="w-full py-3.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-2xl text-sm shadow-lg cursor-pointer whitespace-nowrap">
-                    🔊 危険接近音声アラートをテスト再生
+                    🔊 音声でお知らせを試しに聞く
                 </button>
                 <button type="button" onclick="sendSafeArrivalNotice()" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-2xl text-sm shadow-lg cursor-pointer whitespace-nowrap">
                     🏠 家族に「無事到着したよ！」を送る
@@ -874,6 +947,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <div class="text-[11px] font-bold text-emerald-700">🟢 ログイン中</div>
+                        <div id="auth-login-status-line" class="text-[11px] font-extrabold text-emerald-800">ログインできました。ニックネーム：---</div>
                         <div id="auth-profile-nickname" class="text-base font-black text-slate-900">---</div>
                         <div id="auth-profile-email" class="text-[11px] text-slate-600">---</div>
                     </div>
@@ -1071,7 +1145,7 @@
 <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[88vh] flex flex-col p-5 shadow-2xl border-t-8 border-emerald-600">
 <div class="flex justify-between items-start pb-3 border-b border-slate-200 flex-none gap-2">
 <div>
-<h3 class="text-base font-black text-slate-900">📊 利用状況・感想レポート</h3>
+<h3 class="text-base font-black text-slate-900">📊 みんなの声と安全の記録</h3>
 <p class="text-[11px] text-slate-500">都道府県・地域・国ごとの利用状況と、みんなの感想のまとめ</p>
 </div>
 <button type="button" onclick="closeUsageReportModal()" class="text-slate-400 hover:text-slate-700 text-2xl font-bold cursor-pointer whitespace-nowrap">×</button>
@@ -1102,9 +1176,30 @@
             </div>
 
             <div id="version-history-container" class="py-3 space-y-3 overflow-y-auto flex-1 text-xs">
+<div data-ver-type="review" class="p-3.5 bg-gradient-to-r from-emerald-50 to-blue-50 border-l-4 border-emerald-600 rounded-r-2xl space-y-1 shadow-sm">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-extrabold text-sm text-emerald-950">Ver.8.10（最新）｜審査員レビューの改善：言葉・ルートまとめ・はじめての流れ</span>
+                        <span class="bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap">稼働中</span>
+                    </div>
+                    <p class="text-slate-700">最終審査に向けて、審査員レビューの改善を入れました。ボタンの言葉を分かりやすくし（「地図で近くの危険をチェックする」「危険を見つけたら、みんなに教える」など）、ルート比較の結果を「おすすめ・理由・時間と距離」の3行でまとめました。ログイン後は「ログインできました。ニックネーム：○○」と1行で分かります。ログインしなくても地図と危険メモは見られ、投稿するときだけログインを求めます。地図の初期表示は危険メモだけで、警察・消防・施設は凡例のチェックで切り替えられます。文字サイズの初期設定は「大」にしました。はじめて使うときに気になる危険を3つまで選ぶと、その種類だけ表示します。重なったピンは数字の丸にまとまり、タップすると一覧が出ます。</p>
+                </div>
+<div data-ver-type="major" class="p-3.5 bg-gradient-to-r from-emerald-50 to-blue-50 border-l-4 border-emerald-600 rounded-r-2xl space-y-1 shadow-sm">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-extrabold text-sm text-emerald-950">Ver.8.9｜Googleログインをポップアップ方式に変更</span>
+                        <span class="bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap">稼働中</span>
+                    </div>
+                    <p class="text-slate-700">Googleでログインしてアプリに戻ってきたとき、ログインが残らずスタート画面に戻ってしまうことがありました。原因は、アプリに戻る方式だとiPadのSafariでログインの結果がアプリに届かないことがあるためです。Googleログインをその場で完了するポップアップ方式に変えました。ポップアップがブロックされた場合は、ブラウザの設定でこのサイトのポップアップを許可してください。</p>
+                </div>
+<div data-ver-type="major" class="p-3.5 bg-gradient-to-r from-emerald-50 to-blue-50 border-l-4 border-emerald-600 rounded-r-2xl space-y-1 shadow-sm">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-extrabold text-sm text-emerald-950">Ver.8.8｜Googleログインで戻ってきたときにログインが残るように修正</span>
+                        <span class="bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap">稼働中</span>
+                    </div>
+                    <p class="text-slate-700">Googleでログインしてアプリに戻ってきたとき、ログインが残らずスタート画面に戻ってしまうことがありました。原因は、戻ってきた直後にFirebaseの認証状態の復元がまだ終わっておらず、その瞬間だけログイン状態が見えていなかったことです。認証状態が復元されたら自動でログイン状態を結びつけるようにし、ログアウトしたときはFirebaseからもログアウトするようにしました。</p>
+                </div>
                                                                                                                                                 <div data-ver-type="major" class="p-3.5 bg-gradient-to-r from-emerald-50 to-blue-50 border-l-4 border-emerald-600 rounded-r-2xl space-y-1 shadow-sm">
                     <div class="flex items-center justify-between gap-2">
-                        <span class="font-extrabold text-sm text-emerald-950">Ver.8.7（最新）｜ランキングにニックネームを表示するかどうか選べるようにした</span>
+                        <span class="font-extrabold text-sm text-emerald-950">Ver.8.7｜ランキングにニックネームを表示するかどうか選べるようにした</span>
                         <span class="bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap">稼働中</span>
                     </div>
                     <p class="text-slate-700">ランキングに自分のニックネームを表示するかどうかを、ログイン中の画面で選べるようにしました。チェックを外すと、ランキングでは「匿名の隊員」と表示されます。ポイントや順位は変わりません。初期状態では表示する設定になっています。</p>
@@ -1268,7 +1363,7 @@
                 </ul>
             </div>
             <div class="text-right pt-2">
-                <button type="button" onclick="closePrivacyTermsModal()" class="px-5 py-2 bg-blue-700 text-white font-bold rounded-xl cursor-pointer whitespace-nowrap">同意して閉じる</button>
+                <button type="button" onclick="closePrivacyTermsModal()" class="px-5 py-2 bg-blue-700 text-white font-bold rounded-xl cursor-pointer whitespace-nowrap">ルールを守って使う</button>
             </div>
         </div>
     </div>
@@ -1444,6 +1539,7 @@
         let userMarker = null;
         let postSelectMarker = null;
         let spotsLayerGroup = null;
+        let spotsClusterGroup = null;
         let officialPinsLayerGroup = null;
         let stationsLayerGroup = null;
         let routeLayerGroup = null;
@@ -2028,6 +2124,8 @@
                 const emailEl = document.getElementById("auth-profile-email");
                 const ptsEl = document.getElementById("auth-profile-points");
                 if (nickEl) nickEl.innerText = activeAccount.nickname;
+                const statusEl = document.getElementById("auth-login-status-line");
+                if (statusEl) statusEl.innerText = `ログインできました。ニックネーム：${activeAccount.nickname}`;
                 if (emailEl) emailEl.innerText = activeAccount.email;
                 if (ptsEl) ptsEl.innerText = `${userPoints.toLocaleString()} pt`;
             const showNameEl = document.getElementById("auth-showname-ranking");
@@ -2119,7 +2217,7 @@
                         updateAuthHeaderAndModalUI();
                         renderDangerSpots();
                         closeAuthModal();
-                        showToast(`🎉 新規登録完了！ようこそ ${nickname} さん！`);
+                        showToast(`新規登録完了！ログインできました。ニックネーム：${nickname}`);
                         return;
                     } else if (matchedDoc) {
                         if (!(await verifyPassword(password, matchedDoc))) {
@@ -2150,7 +2248,7 @@
                         updateAuthHeaderAndModalUI();
                         renderDangerSpots();
                         closeAuthModal();
-                        showToast(`🟢 ${activeAccount.nickname} さんとしてログインしました！`);
+                        showToast(`ログインできました。ニックネーム：${activeAccount.nickname}`);
                         return;
                     }
                     // サーバーにアカウントが無くても、ローカルにあれば
@@ -2222,8 +2320,8 @@
                 renderDangerSpots();
                 closeAuthModal();
                 showToast(wasRegister
-                    ? `🎉 新規登録完了！ようこそ ${activeAccount.nickname} さん！`
-                    : `🟢 ${activeAccount.nickname} さんとしてログインしました！`);
+                    ? `新規登録完了！ログインできました。ニックネーム：${activeAccount.nickname}`
+                    : `ログインできました。ニックネーム：${activeAccount.nickname}`);
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerText = originalBtnText;
@@ -2232,6 +2330,11 @@
 
         async function handleLogout() {
             await persistActiveAccountSession(null);
+            try {
+                if (fbAuth && fbAuthModule && fbAuthModule.signOut) {
+                    await fbAuthModule.signOut(fbAuth);
+                }
+            } catch (e) { console.warn("Firebaseからのログアウトに失敗:", e); }
             clearLocalSession();
             activeAccount = null;
             userPoints = 0;
@@ -2286,6 +2389,22 @@
                         await authMod.setPersistence(fbAuth, authMod.browserLocalPersistence);
                     }
                 } catch (e) { console.warn("Googleログインの永続化設定に失敗:", e); }
+                // 復元の取りこぼし防止（Ver.8.8）：Firebaseの認証状態は
+                // 非同期で復元されるため、戻ってきた直後に確認しても
+                // まだログイン状態が見えていないことがあった。
+                // 認証状態が復元されたら自動でアプリのアカウントに結びつける。
+                if (!window._googleAuthStateListenerRegistered && authMod.onAuthStateChanged) {
+                    window._googleAuthStateListenerRegistered = true;
+                    authMod.onAuthStateChanged(fbAuth, function (fbUser) {
+                        if (!fbUser || !fbUser.email) return;
+                        if (activeAccount) return;
+                        if (typeof loginWithGoogleUser === "function") {
+                            loginWithGoogleUser(fbUser, true).catch(function (e) {
+                                console.warn("Googleログインの自動復元に失敗:", e);
+                            });
+                        }
+                    });
+                }
                 return { authMod, auth: fbAuth };
             })();
             return googleAuthInitPromise;
@@ -2295,17 +2414,31 @@
             const errBox = document.getElementById("auth-error-box");
             const btn = document.getElementById("auth-google-btn");
             if (errBox) errBox.classList.add("hidden");
-            if (btn) { btn.disabled = true; btn.innerText = "Googleに移動しています..."; }
+            if (btn) { btn.disabled = true; btn.innerText = "Googleログイン中..."; }
             try {
                 const { authMod, auth } = await ensureFirebaseAuthOnly();
                 const provider = new authMod.GoogleAuthProvider();
                 provider.setCustomParameters({ prompt: "select_account" });
-                await authMod.signInWithRedirect(auth, provider);
+                // ポップアップ方式（Ver.8.9）：リダイレクト方式では、iPadの
+                // Safariでログインの結果がアプリに届かず、戻ってきても
+                // ログインが残らないことがあった。その場で完了する
+                // ポップアップ方式に変えた。
+                const result = await authMod.signInWithPopup(auth, provider);
+                if (result && result.user) {
+                    await loginWithGoogleUser(result.user);
+                }
+                if (btn) { btn.disabled = false; btn.innerText = "G Googleでログイン"; }
             } catch (e) {
-                console.warn("Googleログイン開始に失敗:", e);
+                console.warn("Googleログインに失敗:", e);
                 if (errBox) {
                     errBox.classList.remove("hidden");
-                    errBox.innerText = "Googleログインを開始できませんでした。通信状況を確認して、もう一度お試しください。";
+                    if (e && e.code === "auth/popup-blocked") {
+                        errBox.innerText = "ポップアップがブロックされました。ブラウザの設定でこのサイトのポップアップを許可して、もう一度お試しください。";
+                    } else if (e && e.code === "auth/popup-closed-by-user") {
+                        errBox.innerText = "Googleログインがキャンセルされました。もう一度お試しください。";
+                    } else {
+                        errBox.innerText = "Googleログインを開始できませんでした。通信状況を確認して、もう一度お試しください。";
+                    }
                 }
                 if (btn) { btn.disabled = false; btn.innerText = "G Googleでログイン"; }
             }
@@ -2314,7 +2447,7 @@
         // Googleログインのアカウントをアプリのアカウントに結びつける。
         // 既存のメール・パスワードのアカウントと同じメールアドレスなら、
         // そのアカウントをそのまま使う（ポイントは引き継ぐ）。新規なら作成する。
-        async function loginWithGoogleUser(fbUser) {
+        async function loginWithGoogleUser(fbUser, quiet) {
             if (!fbUser || !fbUser.email) return false;
             const email = String(fbUser.email).trim().toLowerCase();
             const nickname = (fbUser.displayName || "").trim() || email.split("@")[0];
@@ -2349,7 +2482,7 @@
             updateAuthHeaderAndModalUI();
             renderDangerSpots();
             closeAuthModal();
-            showToast(`🟢 ${activeAccount.nickname} さんとしてGoogleログインしました！`);
+            if (!quiet) showToast(`ログインできました。ニックネーム：${activeAccount.nickname}`);
             return true;
         }
 
@@ -2654,6 +2787,11 @@
             });
 
             spotsLayerGroup = L.layerGroup().addTo(map);
+            if (typeof L.markerClusterGroup === "function") {
+                spotsClusterGroup = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 60, zoomToBoundsOnClick: false });
+                spotsClusterGroup.on("clusterclick", (e) => showClusterSpotList(e.layer.getAllChildMarkers()));
+                spotsClusterGroup.addTo(map);
+            }
             officialPinsLayerGroup = L.layerGroup().addTo(map);
             stationsLayerGroup = L.layerGroup().addTo(map);
             routeLayerGroup = L.layerGroup().addTo(map);
@@ -2762,8 +2900,91 @@
             return "防犯・注意";
         }
 
+        // 気になる危険フィルター（Ver.8.10）：はじめてのときに最大3つまで選ぶ。
+        const WORRY_OPTIONS = [
+            { key: "見通しが悪い交差点", worry: "見通しが心配", emoji: "👀" },
+            { key: "車のスピードが速い道", worry: "車が心配", emoji: "🚗" },
+            { key: "街灯が少なく暗い夜道", worry: "夜道が心配", emoji: "🌙" },
+            { key: "道路の段差・陥没・工事", worry: "段差が心配", emoji: "🚧" },
+            { key: "大雨時の冠水・浸水エリア", worry: "水が心配", emoji: "🌊" },
+            { key: "不審者・防犯上の注意", worry: "防犯が心配", emoji: "⚠️" }
+        ];
+        const WORRY_STORAGE_KEY = "mamori-map-dx:worries:v1";
+        let worryFilter = loadWorryFilter();
+        function loadWorryFilter() {
+            try {
+                const raw = localStorage.getItem(WORRY_STORAGE_KEY);
+                if (!raw) return [];
+                const arr = JSON.parse(raw);
+                return Array.isArray(arr) ? arr.filter((c) => WORRY_OPTIONS.some((o) => o.key === c)) : [];
+            } catch { return []; }
+        }
+        function saveWorryFilter() {
+            try { localStorage.setItem(WORRY_STORAGE_KEY, JSON.stringify(worryFilter)); } catch {}
+        }
+        function worriesChosen() {
+            try { return localStorage.getItem(WORRY_STORAGE_KEY) !== null; } catch { return worryFilter.length > 0; }
+        }
+        function openWorryPicker() {
+            const modal = document.getElementById("worry-picker-modal");
+            if (!modal) return;
+            WORRY_OPTIONS.forEach((opt) => {
+                const cb = document.getElementById("worry-opt-" + opt.key);
+                if (cb) cb.checked = worryFilter.includes(opt.key);
+            });
+            updateWorryPickerHint();
+            modal.classList.remove("hidden");
+        }
+        function closeWorryPicker() { document.getElementById("worry-picker-modal")?.classList.add("hidden"); }
+        function onWorryOptionChange(changed) {
+            const checked = WORRY_OPTIONS.filter((o) => document.getElementById("worry-opt-" + o.key)?.checked).map((o) => o.key);
+            if (checked.length > 3) {
+                changed.checked = false;
+                showToast("気になる危険は3つまで選べます。");
+                return;
+            }
+            updateWorryPickerHint();
+        }
+        function updateWorryPickerHint() {
+            const n = WORRY_OPTIONS.filter((o) => document.getElementById("worry-opt-" + o.key)?.checked).length;
+            const hint = document.getElementById("worry-picker-hint");
+            if (hint) hint.innerText = n === 0 ? "選ばなければ、すべての危険を表示します。" : `${n}つ選んでいます（あと${3 - n}つ選べます）。`;
+        }
+        function applyWorryPicker() {
+            worryFilter = WORRY_OPTIONS.filter((o) => document.getElementById("worry-opt-" + o.key)?.checked).map((o) => o.key);
+            saveWorryFilter();
+            closeWorryPicker();
+            renderDangerSpots();
+            showToast(worryFilter.length > 0 ? `選んだ${worryFilter.length}種類の危険だけを表示します。` : "すべての危険を表示します。");
+        }
+        function skipWorryPicker() {
+            worryFilter = [];
+            saveWorryFilter();
+            closeWorryPicker();
+            renderDangerSpots();
+        }
+        function showClusterSpotList(markers) {
+            const modal = document.getElementById("cluster-spots-modal");
+            const listEl = document.getElementById("cluster-spots-list");
+            const titleEl = document.getElementById("cluster-spots-title");
+            if (!modal || !listEl) return;
+            const spots = (markers || []).map((m) => m._mamoriSpot).filter(Boolean);
+            if (titleEl) titleEl.innerText = `📍 この場所の危険メモ（${spots.length}件）`;
+            listEl.innerHTML = spots.map((s) => {
+                const emoji = getCategoryEmoji(s.category);
+                return `<button type="button" onclick="closeClusterSpotsModal(); focusSpotOnMap('${s.id}')" class="w-full text-left bg-white hover:bg-amber-50 border border-slate-200 rounded-xl p-3 cursor-pointer">
+                    <div class="font-extrabold text-slate-900 text-xs">${emoji} ${escHtml(s.category)}</div>
+                    <div class="text-[11px] text-slate-600 mt-0.5 leading-relaxed">${escHtml((s.memo || "").slice(0, 60))}</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">投稿者: ${escHtml(s.authorName || "ユーザー投稿")} / 👍 ${s.thanks || 0}</div>
+                </button>`;
+            }).join("");
+            modal.classList.remove("hidden");
+        }
+        function closeClusterSpotsModal() { document.getElementById("cluster-spots-modal")?.classList.add("hidden"); }
+
         function renderDangerSpots() {
             if (spotsLayerGroup) spotsLayerGroup.clearLayers();
+            if (spotsClusterGroup) spotsClusterGroup.clearLayers();
             const container = document.getElementById("danger-spots-list");
             const countBadge = document.getElementById("spots-count-badge");
 
@@ -2771,6 +2992,7 @@
                 if (s.deletedByReport || (s.reports || 0) >= 10) return false;
                 if (currentFilterTarget !== "all" && s.target !== "all" && s.target !== currentFilterTarget) return false;
                 if (currentFilterTime !== "all" && s.time !== "all" && s.time !== currentFilterTime) return false;
+                if (worryFilter.length > 0 && !worryFilter.includes(s.category)) return false;
                 return true;
             });
 
@@ -2786,9 +3008,10 @@
                         iconSize: [34, 34],
                         iconAnchor: [17, 17]
                     });
-                    L.marker([spot.lat, spot.lng], { icon })
-                        .addTo(spotsLayerGroup)
-                        .bindPopup(`
+                    const spotMarker = L.marker([spot.lat, spot.lng], { icon });
+                    spotMarker._mamoriSpot = spot;
+                    if (spotsClusterGroup) spotMarker.addTo(spotsClusterGroup); else spotMarker.addTo(spotsLayerGroup);
+                    spotMarker.bindPopup(`
                             <div style="min-width:190px;font-size:12px;">
                                 <b>${emoji} ${spot.category}</b><br>
                                 <p style="margin:4px 0;">${spot.memo || "危険箇所が報告されています"}</p>
@@ -2898,6 +3121,11 @@
         }
 
         async function submitDangerSpot() {
+            if (!activeAccount) {
+                showToast("危険メモを投稿するにはログインしてください。");
+                openAuthModal();
+                return;
+            }
             const category = document.getElementById("post-category").value;
             const target = document.getElementById("post-target").value;
             const time = document.getElementById("post-time").value;
@@ -3294,6 +3522,22 @@
             drawTwoRoutesComparison(query, currentUserLocation.lat - 0.008, currentUserLocation.lng + 0.004);
         }
 
+        // ルート比較の3行まとめ（Ver.8.10）：おすすめ・理由・時間と距離と危険の種類。
+        function buildRouteSummary3Line(safeDist, dangerDist, safeCount, dangerCount, firstCat, isFallback) {
+            const safeMin = Math.max(1, Math.round(safeDist / 80));
+            const dangerMin = Math.max(1, Math.round(dangerDist / 80));
+            const safeKm = (safeDist / 1000).toFixed(1);
+            const dangerKm = (dangerDist / 1000).toFixed(1);
+            const catLabel = firstCat ? getShortCategoryLabel(firstCat) : "見通し注意";
+            let reason;
+            if (safeCount < dangerCount) reason = `赤いルートの危険スポット${dangerCount}件（${catLabel}）を避けられます`;
+            else if (dangerCount > 0) reason = `危険の件数は同じ（${dangerCount}件）ですが、緑のルートは危険スポットから離れた道を通ります`;
+            else reason = "どちらのルートも危険スポットは0件です。緑の安全ルートがおすすめです";
+            const dangerNote = dangerCount > 0 ? `赤は${catLabel}を${dangerCount}か所通ります` : "赤も危険スポットは0件です";
+            const line1 = "おすすめ：緑の安全ルート" + (isFallback ? "（目安の模式線で表示しています）" : "");
+            return [line1, `理由：${reason}`, `緑：${safeMin}分・${safeKm}km、赤：${dangerMin}分・${dangerKm}km（${dangerNote}）`];
+        }
+
         async function drawTwoRoutesComparison(destName, destLat, destLng, isRefresh = false) {
             if (!routeLayerGroup || typeof L === "undefined") return;
             routeLayerGroup.clearLayers();
@@ -3392,14 +3636,9 @@
             startRouteGpsTracking();
             updateRouteLiveUI();
 
-            const extraMin = Math.max(0, Math.round((safeDur - dangerDur) / 60));
-            const extraM = Math.max(0, Math.round(safeDist - dangerDist));
             const firstCat = dangerHaz.firstCat ? getShortCategoryLabel(dangerHaz.firstCat) : "見通し注意";
-            calloutEl.innerText = isFallback
-                ? `⚠️ 道路情報を取得できなかったため、目安の模式線で表示しています。電波の良い場所で再検索してください。`
-                : (safeHaz.count < dangerHaz.count
-                    ? `💡 おすすめ：プラス約${extraMin}分（${extraM}m）で、危険スポット${dangerHaz.count}件（${firstCat}）を回避できます！`
-                    : `💡 最短ルートと安全ルートの危険件数は同じです（${dangerHaz.count}件）。緑のルートがおすすめです。`);
+            const summaryLines = buildRouteSummary3Line(safeDist, dangerDist, safeHaz.count, dangerHaz.count, firstCat, isFallback);
+            calloutEl.innerHTML = summaryLines.map((line) => `<div>${line}</div>`).join("");
             document.getElementById("safe-route-stats").innerText = formatWalkStats(safeDist, safeDur);
             document.getElementById("safe-route-hazards").innerText = `危険スポット：${safeHaz.count}件${safeHaz.count === 0 ? "（安全ルート）" : "接近"}`;
             document.getElementById("danger-route-stats").innerText = formatWalkStats(dangerDist, dangerDur);
@@ -3570,8 +3809,8 @@
         };
         const LANG_ORDER = ["ja", "easy-ja", "en", "zh", "hi", "es", "fr", "ar", "bn", "ru", "pt", "ur", "id", "de", "sw", "mr", "te", "tr", "ta", "vi", "fil", "ko", "ha", "jv", "it", "th", "gu", "fa", "pl", "uk", "nl", "ms"];
         const I18N = {
-            "ja": ["危険を投稿", "みんなの一覧", "安全ルート", "地域速報", "見守りモードを開始", "ログイン", "表示設定", "危険を投稿する", "みんなの危険メモ一覧", "この言語ではじめる", "表示言語を切り替えました"],
-            "easy-ja": ["きけんをいう", "みんなのメモ", "あんぜんみち", "ちいきそくほう", "みまもりをはじめる", "ログイン", "ひょうじせってい", "きけんをいう", "みんなのきけんメモ", "このことばではじめる", "ことばをかえました"],
+            "ja": ["危険を投稿", "みんなの一覧", "安全ルート", "地域速報", "見守りモードを開始", "ログイン", "表示設定", "危険を見つけたら、みんなに教える", "みんなの危険メモ一覧", "この言語ではじめる", "表示言語を切り替えました"],
+            "easy-ja": ["きけんをいう", "みんなのメモ", "あんぜんみち", "ちいきそくほう", "みまもりをはじめる", "ログイン", "ひょうじせってい", "きけんを みんなに おしえる", "みんなのきけんメモ", "このことばではじめる", "ことばをかえました"],
             "en": ["Report", "List", "Safe Route", "Alerts", "Start watch mode", "Log in", "Display", "Report danger", "Everyone's danger notes", "Start in this language", "Language changed"],
             "zh": ["报告危险", "危险列表", "安全路线", "地区速报", "开始守护模式", "登录", "显示设置", "报告危险", "大家的危险记录", "使用该语言开始", "已切换语言"],
             "hi": ["खतरा बताएं", "सूची", "सुरक्षित रास्ता", "क्षेत्रीय सूचना", "निगरानी शुरू करें", "लॉग इन", "प्रदर्शन", "खतरा बताएं", "सबके खतरे के नोट", "इस भाषा में शुरू करें", "भाषा बदल दी गई"],
@@ -3697,10 +3936,12 @@
             if (cb && cb.checked !== furiganaVisible) toggleFurigana();
             applyLanguage(gateSelectedLang);
             closeLanguageGate();
+            if (!worriesChosen()) setTimeout(openWorryPicker, 400);
         }
         function skipGateLanguage() {
             applyLanguage("ja");
             closeLanguageGate();
+            if (!worriesChosen()) setTimeout(openWorryPicker, 400);
         }
 
 
@@ -3740,14 +3981,31 @@
             return `<div style="min-width:200px;max-width:260px;"><b>🏬 ${escHtml(f.name)}</b> <span style="color:#64748b;">${escHtml(f.cat)}</span><br><span style="font-size:12px;">${escHtml(f.desc || "")}</span><br><span style="font-size:12px;">${toiletLabel(f.toilet)}　${trashLabel(f.trash || "unknown")}${f.trashNote ? "（" + escHtml(f.trashNote) + "）" : ""}</span>${f.products ? `<br><span style="font-size:12px;">🛍️ 取扱商品：${escHtml(f.products)}</span>` : ""}${offerHtml}<br><button onclick="showFacilityDetail('${f.id}')" style="margin-top:6px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;">詳しく見る・修正する</button></div>`;
         }
         let facilityLayerGroup = null;
+        let facilitiesVisible = false;
+        function applyFacilityLayerVisibility() {
+            if (!facilityLayerGroup || !map) return;
+            const show = document.getElementById("toggle-facilities-layer")?.checked ?? facilitiesVisible;
+            if (show) facilityLayerGroup.addTo(map); else map.removeLayer(facilityLayerGroup);
+        }
+        function toggleFacilitiesLayer(checked) {
+            facilitiesVisible = !!checked;
+            applyFacilityLayerVisibility();
+        }
+        function setFacilitiesVisible(visible) {
+            facilitiesVisible = !!visible;
+            const cb = document.getElementById("toggle-facilities-layer");
+            if (cb) cb.checked = visible;
+            applyFacilityLayerVisibility();
+        }
         function renderFacilityPins() {
             if (!map || typeof L === "undefined") return;
-            if (!facilityLayerGroup) facilityLayerGroup = L.layerGroup().addTo(map);
+            if (!facilityLayerGroup) facilityLayerGroup = L.layerGroup();
             facilityLayerGroup.clearLayers();
             getFacilities().forEach((f) => {
                 const icon = L.divIcon({ className: "custom-div-icon", html: `<div style="background:#7c3aed;color:#fff;border:2px solid #fff;border-radius:9999px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 2px 6px rgba(0,0,0,.3);">🏬</div>`, iconSize: [26, 26], iconAnchor: [13, 13] });
                 L.marker([f.lat, f.lng], { icon }).addTo(facilityLayerGroup).bindPopup(facilityPopupHtml(f));
             });
+            applyFacilityLayerVisibility();
         }
         function renderFacilityList() {
             const listEl = document.getElementById("facility-list");
@@ -3781,7 +4039,7 @@
         }
         function focusFacility(id) {
             const f = getFacilityById(id); if (!f) return;
-            if (map) { map.setView([f.lat, f.lng], 16); renderFacilityPins(); }
+            if (map) { setFacilitiesVisible(true); map.setView([f.lat, f.lng], 16); renderFacilityPins(); }
             switchTab("facility");
             setTimeout(() => { if (facilityLayerGroup) facilityLayerGroup.eachLayer((m) => { const ll = m.getLatLng(); if (Math.abs(ll.lat - f.lat) < 0.0001 && Math.abs(ll.lng - f.lng) < 0.0001) m.openPopup(); }); }, 300);
         }
@@ -4104,6 +4362,7 @@
         function setTextSize(size) {
             document.body.classList.remove("text-size-normal", "text-size-large", "text-size-xlarge");
             document.body.classList.add(`text-size-${size}`);
+            try { localStorage.setItem("mamori-map-dx:text-size:v1", size); } catch {}
             ["normal", "large", "xlarge"].forEach((s) => {
                 const btn = document.getElementById(`size-btn-${s}`);
                 if (btn) {
@@ -4618,6 +4877,11 @@ showToast("⬇️ CSVをダウンロードしました");
             // restoreSavedAccountSession() が最新ポイントで上書きする。
             const restoredLocally = restoreLocalSessionOnBoot();
             updateRankUI();
+            // 文字サイズの復元（Ver.8.10）：保存がなければ「大」を初期設定にする。
+            try {
+                const savedTextSize = localStorage.getItem("mamori-map-dx:text-size:v1");
+                setTextSize(savedTextSize === "normal" || savedTextSize === "large" || savedTextSize === "xlarge" ? savedTextSize : "large");
+            } catch { setTextSize("large"); }
             // 言語の復元（Ver.8.1）：保存済みの言語がなければ起動時の言語選択画面を開く。
             initLanguageOnBoot();
             initMap();

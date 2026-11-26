@@ -7,7 +7,7 @@
  * 注意: Firebase / 投稿データはオンライン時のみ同期されます。
  * ログイン状態は localStorage に保存済みなので、オフラインでも維持されます。
  */
-const CACHE_VERSION = "mamori-map-dx-v13";
+const CACHE_VERSION = "mamori-map-dx-v15";
 const APP_SHELL = ["./", "./index.html", "./manifest.webmanifest",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-180.png",
   "./icons/icon-maskable-512.png"];
