@@ -3,8 +3,8 @@
 地域の危険な場所をみんなで共有する、参加型の安全マップです。
 お年寄り・こども・外国人が「画面を見ずに歩いても安全」な地域をつくることを目指しています。
 
-- 公開アプリ：https://mamori-map-dx.web.app
-- 紹介ページ：https://mamori-map-dx-intro.web.app
+- 公開アプリ：https://mamori-map-dx-2.web.app
+- 紹介ページ：https://mamori-map-dx-intro-2.web.app
 
 岡山芳泉高校 情報Ⅰ 課題研究（作者：緋真）。全国情報教育コンテスト2026の応募作品です。
 拠点は岡山芳泉高校周辺（岡山市南区芳泉3-1-1）です。
@@ -51,7 +51,7 @@ python3 -m http.server 8000
 ## 公開する方法（Firebase Hosting）
 
 ```bash
-firebase deploy --only hosting --project mamori-map-dx
+firebase deploy --only hosting --project mamori-map-dx-2
 ```
 
 公開には Firebase プロジェクトが必要です。このアプリでは次の機能を使っています。
